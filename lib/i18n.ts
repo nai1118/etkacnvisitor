@@ -112,7 +112,7 @@ export type Dict = {
 
 const en: Dict = {
   breadcrumb: "etka.com.cn / etkaportalcn / zh-cn / login / news",
-  title: "Visitor access timestamp analytics",
+  title: "ETKA News China Visitor Access Time Analysis",
   intro: ({ total, usingSample, pageLabel, range }) =>
     `${total} visits ${usingSample ? "from the bundled sample export" : "parsed from your uploaded PDF(s)"}` +
     `${pageLabel ? ` for ${pageLabel}` : ""}, aggregated by hour of day, by weekday and by month. Observation window ${range}.`,
