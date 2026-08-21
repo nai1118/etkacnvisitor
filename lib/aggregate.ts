@@ -34,6 +34,11 @@ export function monthKeyOf(ts: number, zone: Zone): string {
   return `${p.year}-${String(p.month + 1).padStart(2, "0")}`
 }
 
+/** "YYYY-MM-DD" bucket key for a timestamp in the given zone, e.g. for the by-hour day filter. */
+export function dayKeyOf(ts: number, zone: Zone): string {
+  return dayKey(ts, ZONE_OFFSET[zone])
+}
+
 export type HourBucket = { hour: number; label: string; logins: number; share: number }
 
 // Hour labels ("00:00") are language-neutral, so aggregateByHour needs no lang param.
@@ -242,6 +247,6 @@ export function summarize(events: LoginEvent[], zone: Zone, lang: Lang = "en"): 
 
 export function formatRange(events: LoginEvent[], zone: Zone, lang: Lang = "en") {
   const days = dailySeries(events, zone, lang)
-  if (days.length === 0) return lang === "zh" ? "無資料" : "no data"
+  if (days.length === 0) return lang === "zh" ? "无资料" : "no data"
   return `${days[0].label} – ${days[days.length - 1].label}`
 }

@@ -71,6 +71,8 @@ export type Dict = {
 
   byHourTitle: string
   byHourDesc: (total: number, zone: string) => string
+  byHourDayLabel: string
+  allDays: string
   bandNight: string
   bandMorning: string
   bandAfternoon: string
@@ -147,6 +149,8 @@ const en: Dict = {
 
   byHourTitle: "By hour of day",
   byHourDesc: (total, zone) => `All ${total} events folded into 24 buckets, ${zone} wall clock.`,
+  byHourDayLabel: "Date",
+  allDays: "All days",
   bandNight: "00–06 night",
   bandMorning: "06–12 morning",
   bandAfternoon: "12–18 afternoon",
@@ -223,6 +227,8 @@ const zh: Dict = {
 
   byHourTitle: "依小时分布",
   byHourDesc: (total, zone) => `全部 ${total} 笔事件依 ${zone} 时间归入 24 个小时区间。`,
+  byHourDayLabel: "日期",
+  allDays: "全部日期",
   bandNight: "00–06 凌晨",
   bandMorning: "06–12 上午",
   bandAfternoon: "12–18 下午",

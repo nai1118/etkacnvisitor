@@ -20,6 +20,7 @@ import {
   aggregateByWeekday,
   compareMonths as buildCompareSeries,
   dailySeries,
+  dayKeyOf,
   formatRange,
   monthKeyOf,
   summarize,
@@ -27,6 +28,7 @@ import {
 } from "@/lib/aggregate"
 
 const ALL_MONTHS = "all"
+const ALL_DAYS = "all"
 
 function dedupeEvents(events: LoginEvent[]): LoginEvent[] {
   const seen = new Set<number>()
@@ -52,6 +54,7 @@ export function Dashboard() {
   const [sources, setSources] = useState<UploadedSource[]>([])
   const [page, setPage] = useState<string>(ALL_MONTHS)
   const [compareKeys, setCompareKeys] = useState<string[]>([])
+  const [hourDay, setHourDay] = useState<string>(ALL_DAYS)
 
   const t = T[lang]
   const BANDS: { label: string; from: number; to: number }[] = [
@@ -111,9 +114,8 @@ export function Dashboard() {
     [events, zone, page],
   )
 
-  const { hours, days, weekdays, summary, range } = useMemo(
+  const { days, weekdays, summary, range } = useMemo(
     () => ({
-      hours: aggregateByHour(pageEvents, zone),
       days: dailySeries(pageEvents, zone, lang),
       weekdays: aggregateByWeekday(pageEvents, zone, lang),
       summary: summarize(pageEvents, zone, lang),
@@ -121,6 +123,32 @@ export function Dashboard() {
     }),
     [pageEvents, zone, lang],
   )
+
+  // Days with at least one event, within the current month page — the
+  // options for the "By hour of day" date filter.
+  const hourDayOptions = useMemo(() => days.filter((d) => d.logins > 0), [days])
+
+  // If the selected date falls outside the current page (month switch,
+  // upload replaced the data, zone flip, etc.) fall back to "all days".
+  useEffect(() => {
+    if (hourDay !== ALL_DAYS && !hourDayOptions.some((d) => d.date === hourDay)) {
+      setHourDay(ALL_DAYS)
+    }
+  }, [hourDayOptions, hourDay])
+
+  const hourEvents = useMemo(
+    () => (hourDay === ALL_DAYS ? pageEvents : pageEvents.filter((e) => dayKeyOf(e.ts, zone) === hourDay)),
+    [pageEvents, zone, hourDay],
+  )
+
+  const hours = useMemo(() => aggregateByHour(hourEvents, zone), [hourEvents, zone])
+
+  const hourSummary = useMemo(() => {
+    const total = hourEvents.length
+    const peak = hours.reduce((a, b) => (b.logins > a.logins ? b : a), hours[0])
+    const working = hours.filter((h) => h.hour >= 8 && h.hour < 18).reduce((s, h) => s + h.logins, 0)
+    return { total, peakLabel: peak?.label ?? "00:00", workingShare: total ? working / total : 0 }
+  }, [hours, hourEvents])
 
   const bands = BANDS.map((b) => ({
     ...b,
@@ -283,7 +311,29 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t.byHourTitle}</CardTitle>
-            <CardDescription>{t.byHourDesc(summary.total, ZONE_LABEL[lang][zone])}</CardDescription>
+            <CardDescription>{t.byHourDesc(hourSummary.total, ZONE_LABEL[lang][zone])}</CardDescription>
+            <CardAction className="flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{t.byHourDayLabel}</span>
+              <Select value={hourDay} onValueChange={(v) => setHourDay(v ?? ALL_DAYS)}>
+                <SelectTrigger size="sm" className="min-w-32 font-mono text-xs" aria-label={t.byHourDayLabel}>
+                  <SelectValue placeholder={t.allDays}>
+                    {(v: string | null) =>
+                      v === null || v === ALL_DAYS ? t.allDays : (hourDayOptions.find((d) => d.date === v)?.label ?? v)
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_DAYS} className="font-mono text-xs">
+                    {t.allDays}
+                  </SelectItem>
+                  {hourDayOptions.map((d) => (
+                    <SelectItem key={d.date} value={d.date} className="font-mono text-xs">
+                      {d.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardAction>
           </CardHeader>
           <CardContent>
             <HourlyChart data={hours} lang={lang} />
@@ -294,7 +344,7 @@ export function Dashboard() {
                   <dd className="mt-1 font-mono text-sm tabular-nums">
                     {b.logins}
                     <span className="ml-1.5 text-xs text-muted-foreground">
-                      {summary.total ? Math.round((b.logins / summary.total) * 100) : 0}%
+                      {hourSummary.total ? Math.round((b.logins / hourSummary.total) * 100) : 0}%
                     </span>
                   </dd>
                 </div>
@@ -302,7 +352,7 @@ export function Dashboard() {
             </dl>
             <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
               <Clock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-              {t.workingHoursNote((summary.workingHoursShare * 100).toFixed(0), ZONE_LABEL[lang][zone], summary.peakHour.label)}
+              {t.workingHoursNote((hourSummary.workingShare * 100).toFixed(0), ZONE_LABEL[lang][zone], hourSummary.peakLabel)}
             </p>
           </CardContent>
         </Card>
