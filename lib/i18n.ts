@@ -188,15 +188,14 @@ const en: Dict = {
 
 const zh: Dict = {
   breadcrumb: "etka.com.cn / etkaportalcn / zh-cn / login / news",
-  title: "ETKA News China 访客登录时间戳记分析",
-  intro: ({ total, usingSample, pageLabel, range }) =>
-    `共 ${total} 笔登录记录,${usingSample ? "来自内建的范例汇出档" : "解析自你上传的 PDF"}` +
-    `${pageLabel ? `(仅显示 ${pageLabel})` : ""},依小时、星期与月份汇整。观察区间 ${range}。`,
+  title: "ETKA News China 访客登录时间分析",
+  intro: ({ total, usingSample, pageLabel }) =>
+    `共包含 ${total} 笔访客登录记录${pageLabel ? `(${pageLabel})` : ""},数据来自${usingSample ? "目前内建的范例汇出档" : "你上传的 PDF"},并依小时、星期与月份进行汇整分析。`,
   bucketIn: "时区",
   langLabel: "语言",
 
-  dataSourceTitle: "资料来源",
-  dataSourceDescSample: "目前显示内建的范例汇出档。上传每月ETKA.COM.CN. News访问者时间戳记 PDF 即可取代它。",
+  dataSourceTitle: "数据来源",
+  dataSourceDescSample: "数据来自 ETKA.COM.CN News 访客登录记录。上传每月时间戳记 PDF,即可呈现对应月份的数据分析。",
   dataSourceDescCustom: "下方图表已改为显示你上传的 PDF 解析出的时间戳记。",
   sampleDataSuffix: "(范例资料)",
 
