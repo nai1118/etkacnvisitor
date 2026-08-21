@@ -6,13 +6,12 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import type { DayPoint } from "@/lib/aggregate"
 import { T, type Lang } from "@/lib/i18n"
 
-const config = {
-  logins: { label: "Logins", color: "var(--chart-1)" },
-  rolling: { label: "7-day average", color: "var(--chart-2)" },
-} satisfies ChartConfig
-
 export function TrendChart({ data, average, lang = "en" }: { data: DayPoint[]; average: number; lang?: Lang }) {
   const t = T[lang]
+  const config = {
+    logins: { label: lang === "zh" ? t.chartLoginsWord : "Visits", color: "var(--chart-1)" },
+    rolling: { label: lang === "zh" ? "7 天滚动平均" : "7-day average", color: "var(--chart-2)" },
+  } satisfies ChartConfig
   return (
     <ChartContainer config={config} className="aspect-auto h-[340px] w-full">
       <ComposedChart data={data} margin={{ left: 4, right: 20, top: 12, bottom: 4 }}>

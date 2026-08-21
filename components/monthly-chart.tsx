@@ -6,10 +6,6 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import type { MonthBucket } from "@/lib/aggregate"
 import { T, type Lang } from "@/lib/i18n"
 
-const config = {
-  perDay: { label: "Logins / day", color: "var(--chart-1)" },
-} satisfies ChartConfig
-
 export function MonthlyChart({
   data,
   activeKey,
@@ -24,6 +20,9 @@ export function MonthlyChart({
   lang?: Lang
 }) {
   const t = T[lang]
+  const config = {
+    perDay: { label: lang === "zh" ? t.chartLoginsPerDay : "Visits / day", color: "var(--chart-1)" },
+  } satisfies ChartConfig
   return (
     <ChartContainer config={config} className="aspect-auto h-[160px] w-full">
       <BarChart data={data} layout="vertical" margin={{ left: 0, right: 40, top: 4, bottom: 4 }}>

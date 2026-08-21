@@ -7,9 +7,9 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetBrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono-jet' })
 
 export const metadata: Metadata = {
-  title: 'ETKA Portal · Visitor Login Analytics',
+  title: 'ETKA Portal · Visitor Access Analytics',
   description:
-    'Hourly, daily and monthly aggregation of visitor login timestamps for the ETKA zh-cn login/news portal, July–August 2026.',
+    'Hourly, daily and monthly aggregation of visitor access timestamps for the ETKA zh-cn login/news portal, July–August 2026.',
   generator: 'v0.app',
   icons: {
     icon: [

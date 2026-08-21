@@ -6,12 +6,11 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import type { HourBucket } from "@/lib/aggregate"
 import { T, type Lang } from "@/lib/i18n"
 
-const config = {
-  logins: { label: "Logins", color: "var(--chart-1)" },
-} satisfies ChartConfig
-
 export function HourlyChart({ data, lang = "en" }: { data: HourBucket[]; lang?: Lang }) {
   const t = T[lang]
+  const config = {
+    logins: { label: lang === "zh" ? t.chartLoginsWord : "Visits", color: "var(--chart-1)" },
+  } satisfies ChartConfig
   const peak = Math.max(...data.map((d) => d.logins))
 
   return (

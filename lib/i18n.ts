@@ -110,39 +110,39 @@ export type Dict = {
 
 const en: Dict = {
   breadcrumb: "etka.com.cn / etkaportalcn / zh-cn / login / news",
-  title: "Visitor login timestamp analytics",
+  title: "Visitor access timestamp analytics",
   intro: ({ total, usingSample, pageLabel, range }) =>
-    `${total} login events ${usingSample ? "from the bundled sample export" : "parsed from your uploaded PDF(s)"}` +
+    `${total} visits ${usingSample ? "from the bundled sample export" : "parsed from your uploaded PDF(s)"}` +
     `${pageLabel ? ` for ${pageLabel}` : ""}, aggregated by hour of day, by weekday and by month. Observation window ${range}.`,
   bucketIn: "Bucket in",
   langLabel: "Language",
 
   dataSourceTitle: "Data source",
-  dataSourceDescSample: "Showing the bundled sample export. Upload your own visitor login-timestamp PDF to replace it.",
+  dataSourceDescSample: "Showing the bundled sample export. Upload your own visitor access-timestamp PDF to replace it.",
   dataSourceDescCustom: "Charts below reflect the timestamps parsed from your uploaded PDF(s).",
   sampleDataSuffix: "(sample data)",
 
-  statTotalLogins: "Total logins",
+  statTotalLogins: "Total visits",
   statTotalLoginsNote: (activeDays) => `${activeDays} active days`,
-  statLoginsPerDay: "Logins / day",
+  statLoginsPerDay: "Visits / day",
   statLoginsPerDayNote: (quietDays) => `${quietDays} days with none`,
   statPeakHour: "Peak hour",
-  statPeakHourNote: (logins, pct) => `${logins} logins · ${pct}%`,
+  statPeakHourNote: (logins, pct) => `${logins} visits · ${pct}%`,
   statBusiestDay: "Busiest day",
-  statBusiestDayNote: (logins, weekday) => `${logins} logins · ${weekday}`,
+  statBusiestDayNote: (logins, weekday) => `${logins} visits · ${weekday}`,
   statBusiestDayNoData: "no data",
 
   visitorTrendTitle: "Visitor trend",
   visitorTrendDescNormal:
-    "Daily logins with a 7-day rolling average. Days without a single login are kept as zeros so the gaps stay visible.",
+    "Daily visits with a 7-day rolling average. Days without a single visit are kept as zeros so the gaps stay visible.",
   visitorTrendDescCompare: (labels) => `Comparing ${labels}, lined up by day of month.`,
   pageLabel: "Page",
   allMonths: "All months",
   compareLabel: "Compare",
-  legendLoginsPerDay: "Logins per day",
+  legendLoginsPerDay: "Visits per day",
   legendRollingAvg: "7-day rolling average",
   legendMean: (v) => `mean ${v} / day`,
-  compareLegendItem: (label, logins) => `${label} · ${logins} logins`,
+  compareLegendItem: (label, logins) => `${label} · ${logins} visits`,
 
   byHourTitle: "By hour of day",
   byHourDesc: (total, zone) => `All ${total} events folded into 24 buckets, ${zone} wall clock.`,
@@ -151,11 +151,11 @@ const en: Dict = {
   bandAfternoon: "12–18 afternoon",
   bandEvening: "18–24 evening",
   workingHoursNote: (pct, zone, peakHour) =>
-    `${pct}% of all logins land inside 08:00–18:00 ${zone}, with the single busiest hour at ${peakHour}.`,
+    `${pct}% of all visits land inside 08:00–18:00 ${zone}, with the single busiest hour at ${peakHour}.`,
 
   byMonthTitle: "By month",
-  byMonthDesc: "Normalised to logins per observed day. Click a month to open its page above.",
-  byMonthListItem: (logins, days) => `${logins} logins / ${days} d`,
+  byMonthDesc: "Normalised to visits per observed day. Click a month to open its page above.",
+  byMonthListItem: (logins, days) => `${logins} visits / ${days} d`,
 
   byWeekdayTitle: "By weekday",
   byWeekdayDesc: "Weekend buckets shown in grey.",
@@ -164,7 +164,7 @@ const en: Dict = {
   footerSourceSuffix: "Rows appearing in multiple exports were de-duplicated.",
   footerTz: "Timestamps are stored in UTC; China time is derived as UTC+8, which can shift an event into the next calendar day.",
 
-  uploadIdleText: "Drop a login-log PDF here, or click to choose",
+  uploadIdleText: "Drop a visit-log PDF here, or click to choose",
   uploadBusyText: "Parsing PDF…",
   uploadHint:
     "Timestamps are extracted and aggregated entirely in your browser — the file isn't uploaded anywhere. Multiple files are merged and de-duplicated.",
@@ -177,8 +177,8 @@ const en: Dict = {
   eventCount: (n) => `${n} event${n === 1 ? "" : "s"}`,
   clearUploads: "Clear uploads, show sample data",
 
-  chartLoginsWord: "logins",
-  chartLoginsPerDay: "logins / day",
+  chartLoginsWord: "visits",
+  chartLoginsPerDay: "visits / day",
   chartTotalWord: "total",
   chartDaysWord: "days",
   chartPeakWord: "peak",
@@ -188,37 +188,37 @@ const en: Dict = {
 
 const zh: Dict = {
   breadcrumb: "etka.com.cn / etkaportalcn / zh-cn / login / news",
-  title: "ETKA News China 访客登录时间分析",
+  title: "ETKA News China 访客访问时间分析",
   intro: ({ total, usingSample, pageLabel }) =>
-    `共包含 ${total} 笔访客登录记录${pageLabel ? `(${pageLabel})` : ""},数据来自${usingSample ? "目前内建的范例汇出档" : "你上传的 PDF"},并依小时、星期与月份进行汇整分析。`,
+    `共包含 ${total} 笔访客访问记录${pageLabel ? `(${pageLabel})` : ""},数据来自${usingSample ? "目前内建的范例汇出档" : "你上传的 PDF"},并依小时、星期与月份进行汇整分析。`,
   bucketIn: "时区",
   langLabel: "语言",
 
   dataSourceTitle: "数据来源",
-  dataSourceDescSample: "数据来自 ETKA.COM.CN News 访客登录记录。上传每月时间戳记 PDF,即可呈现对应月份的数据分析。",
+  dataSourceDescSample: "数据来自 ETKA.COM.CN News 访客访问记录。上传每月时间戳记 PDF,即可呈现对应月份的数据分析。",
   dataSourceDescCustom: "下方图表已改为显示你上传的 PDF 解析出的时间戳记。",
   sampleDataSuffix: "(范例资料)",
 
-  statTotalLogins: "登录总数",
+  statTotalLogins: "访问总数",
   statTotalLoginsNote: (activeDays) => `${activeDays} 个有活动的天数`,
-  statLoginsPerDay: "平均每日登录",
-  statLoginsPerDayNote: (quietDays) => `${quietDays} 天没有登录`,
+  statLoginsPerDay: "平均每日访问",
+  statLoginsPerDayNote: (quietDays) => `${quietDays} 天没有访问`,
   statPeakHour: "尖峰时段",
-  statPeakHourNote: (logins, pct) => `${logins} 笔登录 · ${pct}%`,
+  statPeakHourNote: (logins, pct) => `${logins} 笔访问 · ${pct}%`,
   statBusiestDay: "最忙碌的一天",
-  statBusiestDayNote: (logins, weekday) => `${logins} 笔登录 · 周${weekday}`,
+  statBusiestDayNote: (logins, weekday) => `${logins} 笔访问 · 周${weekday}`,
   statBusiestDayNoData: "无资料",
 
   visitorTrendTitle: "访客趋势",
-  visitorTrendDescNormal: "每日登录数与 7 天滚动平均。没有登录的日子以 0 呈现,让断点清楚可见。",
+  visitorTrendDescNormal: "每日访问数与 7 天滚动平均。没有访问的日子以 0 呈现,让断点清楚可见。",
   visitorTrendDescCompare: (labels) => `正在比对 ${labels},依"当月第几天"对齐。`,
   pageLabel: "页面",
   allMonths: "全部月份",
   compareLabel: "比对",
-  legendLoginsPerDay: "每日登录数",
+  legendLoginsPerDay: "每日访问数",
   legendRollingAvg: "7 天滚动平均",
   legendMean: (v) => `平均 ${v} / 天`,
-  compareLegendItem: (label, logins) => `${label} · 共 ${logins} 笔登录`,
+  compareLegendItem: (label, logins) => `${label} · 共 ${logins} 笔访问`,
 
   byHourTitle: "依小时分布",
   byHourDesc: (total, zone) => `全部 ${total} 笔事件依 ${zone} 时间归入 24 个小时区间。`,
@@ -226,11 +226,11 @@ const zh: Dict = {
   bandMorning: "06–12 上午",
   bandAfternoon: "12–18 下午",
   bandEvening: "18–24 晚上",
-  workingHoursNote: (pct, zone, peakHour) => `${pct}% 的登录落在 ${zone} 08:00–18:00 之间,尖峰时段为 ${peakHour}。`,
+  workingHoursNote: (pct, zone, peakHour) => `${pct}% 的访问落在 ${zone} 08:00–18:00 之间,尖峰时段为 ${peakHour}。`,
 
   byMonthTitle: "依月份分布",
-  byMonthDesc: "已换算成每个观察日的平均登录数。点选月份可切换上方页面。",
-  byMonthListItem: (logins, days) => `${logins} 笔登录 / ${days} 天`,
+  byMonthDesc: "已换算成每个观察日的平均访问数。点选月份可切换上方页面。",
+  byMonthListItem: (logins, days) => `${logins} 笔访问 / ${days} 天`,
 
   byWeekdayTitle: "依星期分布",
   byWeekdayDesc: "周末以灰色显示。",
@@ -239,7 +239,7 @@ const zh: Dict = {
   footerSourceSuffix: "同时出现在多份汇出档的记录已去除重复。",
   footerTz: "时间戳记皆以 UTC 储存;中国时间为 UTC+8 换算,可能使事件落到隔天。",
 
-  uploadIdleText: "将登录记录 PDF 拖放到这里,或点击选择档案",
+  uploadIdleText: "将访问记录 PDF 拖放到这里,或点击选择档案",
   uploadBusyText: "正在解析 PDF…",
   uploadHint: "时间戳记解析与汇整全程都在你的浏览器内完成,档案不会上传到任何地方。多个档案会自动合并并去除重复。",
   uploadChooseError: "请选择一个 PDF 档案。",
@@ -250,7 +250,7 @@ const zh: Dict = {
   eventCount: (n) => `${n} 笔事件`,
   clearUploads: "清除上传档案,显示范例资料",
 
-  chartLoginsWord: "登录数",
+  chartLoginsWord: "访问数",
   chartLoginsPerDay: "笔 / 天",
   chartTotalWord: "总计",
   chartDaysWord: "天",
