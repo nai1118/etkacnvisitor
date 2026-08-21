@@ -13,7 +13,7 @@ const config = {
 export function TrendChart({ data, average }: { data: DayPoint[]; average: number }) {
   return (
     <ChartContainer config={config} className="aspect-auto h-[340px] w-full">
-      <ComposedChart data={data} margin={{ left: 4, right: 12, top: 12, bottom: 4 }}>
+      <ComposedChart data={data} margin={{ left: 4, right: 20, top: 12, bottom: 4 }}>
         <defs>
           <linearGradient id="fillLogins" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-logins)" stopOpacity={0.28} />
@@ -26,7 +26,7 @@ export function TrendChart({ data, average }: { data: DayPoint[]; average: numbe
           tickLine={false}
           axisLine={false}
           tickMargin={10}
-          interval={2}
+          interval="preserveStartEnd"
           className="font-mono"
           tick={{ fontSize: 10 }}
         />

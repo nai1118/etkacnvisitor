@@ -1,7 +1,11 @@
-// Visitor login timestamps extracted from the ETKA zh-cn login/news access logs.
-// Source PDFs: "etka_zh-cn_login_news_1-30_Juli_2026" and "etka_zh-cn_login_news"
+// Sample visitor login timestamps extracted from the ETKA zh-cn login/news access
+// logs. Source PDFs: "etka_zh-cn_login_news_1-30_Juli_2026" and "etka_zh-cn_login_news".
 // All times below are UTC (the "UTC-Zeit" column). Duplicate rows across the two
 // exports have been de-duplicated. China time is derived at runtime as UTC+8.
+//
+// This dataset is shown by default. Uploading a PDF via the dashboard's upload
+// panel (see components/pdf-upload.tsx + lib/parse-pdf.ts) replaces it with the
+// timestamps parsed from that file.
 
 type RawDay = [date: string, times: string[]]
 
@@ -54,10 +58,8 @@ export type LoginEvent = {
   ts: number
 }
 
-export const loginEvents: LoginEvent[] = RAW.flatMap(([date, times]) =>
+export const sampleLoginEvents: LoginEvent[] = RAW.flatMap(([date, times]) =>
   times.map((t) => ({ ts: Date.parse(`${date}T${t}Z`) })),
 ).sort((a, b) => a.ts - b.ts)
 
-export const totalLogins = loginEvents.length
-export const rangeStart = loginEvents[0].ts
-export const rangeEnd = loginEvents[loginEvents.length - 1].ts
+export const SAMPLE_SOURCE_LABEL = "etka_zh-cn_login_news (sample data)"

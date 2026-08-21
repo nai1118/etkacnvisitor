@@ -1,6 +1,6 @@
 "use client"
 
-import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, Cell, CartesianGrid, LabelList, XAxis, YAxis } from "recharts"
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import type { MonthBucket } from "@/lib/aggregate"
@@ -9,7 +9,17 @@ const config = {
   perDay: { label: "Logins / day", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
-export function MonthlyChart({ data }: { data: MonthBucket[] }) {
+export function MonthlyChart({
+  data,
+  activeKey,
+  onSelect,
+}: {
+  data: MonthBucket[]
+  /** Month key ("YYYY-MM") currently paged to, if any. Highlights that bar. */
+  activeKey?: string
+  /** Called with a month's key when its bar is clicked, to jump to that page. */
+  onSelect?: (key: string) => void
+}) {
   return (
     <ChartContainer config={config} className="aspect-auto h-[160px] w-full">
       <BarChart data={data} layout="vertical" margin={{ left: 0, right: 40, top: 4, bottom: 4 }}>
@@ -42,7 +52,16 @@ export function MonthlyChart({ data }: { data: MonthBucket[] }) {
             />
           }
         />
-        <Bar dataKey="perDay" fill="var(--color-perDay)" radius={[0, 2, 2, 0]} barSize={26}>
+        <Bar dataKey="perDay" radius={[0, 2, 2, 0]} barSize={26}>
+          {data.map((d) => (
+            <Cell
+              key={d.key}
+              fill={activeKey === d.key ? "var(--chart-2)" : "var(--chart-1)"}
+              fillOpacity={!activeKey || activeKey === d.key ? 1 : 0.35}
+              onClick={onSelect ? () => onSelect(d.key) : undefined}
+              style={{ cursor: onSelect ? "pointer" : undefined }}
+            />
+          ))}
           <LabelList
             dataKey="perDay"
             position="right"

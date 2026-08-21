@@ -1,4 +1,4 @@
-import { loginEvents } from "./login-log"
+import type { LoginEvent } from "./login-log"
 
 export type Zone = "utc" | "cn"
 
@@ -32,16 +32,22 @@ function dayKey(ts: number, offset: number) {
   return `${p.year}-${String(p.month + 1).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`
 }
 
+/** "YYYY-MM" bucket key for a timestamp in the given zone, e.g. for month-page filtering. */
+export function monthKeyOf(ts: number, zone: Zone): string {
+  const p = parts(ts, ZONE_OFFSET[zone])
+  return `${p.year}-${String(p.month + 1).padStart(2, "0")}`
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 export type HourBucket = { hour: number; label: string; logins: number; share: number }
 
-export function aggregateByHour(zone: Zone): HourBucket[] {
+export function aggregateByHour(events: LoginEvent[], zone: Zone): HourBucket[] {
   const offset = ZONE_OFFSET[zone]
   const counts = new Array(24).fill(0) as number[]
-  for (const e of loginEvents) counts[parts(e.ts, offset).hour] += 1
-  const total = loginEvents.length
+  for (const e of events) counts[parts(e.ts, offset).hour] += 1
+  const total = events.length
   return counts.map((logins, hour) => ({
     hour,
     label: `${String(hour).padStart(2, "0")}:00`,
@@ -60,11 +66,11 @@ export type MonthBucket = {
   peakHour: number
 }
 
-export function aggregateByMonth(zone: Zone): MonthBucket[] {
+export function aggregateByMonth(events: LoginEvent[], zone: Zone): MonthBucket[] {
   const offset = ZONE_OFFSET[zone]
   const map = new Map<string, { label: string; logins: number; days: Set<string>; hours: number[] }>()
 
-  for (const e of loginEvents) {
+  for (const e of events) {
     const p = parts(e.ts, offset)
     const key = `${p.year}-${String(p.month + 1).padStart(2, "0")}`
     let bucket = map.get(key)
@@ -77,7 +83,7 @@ export function aggregateByMonth(zone: Zone): MonthBucket[] {
     bucket.hours[p.hour] += 1
   }
 
-  const days = dailySeries(zone)
+  const days = dailySeries(events, zone)
   return [...map.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, b]) => {
@@ -107,16 +113,19 @@ export type DayPoint = {
 }
 
 /** Continuous daily series across the observed window (gaps filled with 0). */
-export function dailySeries(zone: Zone): DayPoint[] {
+export function dailySeries(events: LoginEvent[], zone: Zone): DayPoint[] {
+  if (events.length === 0) return []
+
   const offset = ZONE_OFFSET[zone]
   const counts = new Map<string, number>()
-  for (const e of loginEvents) {
+  for (const e of events) {
     const k = dayKey(e.ts, offset)
     counts.set(k, (counts.get(k) ?? 0) + 1)
   }
 
-  const first = loginEvents[0].ts + offset * HOUR
-  const last = loginEvents[loginEvents.length - 1].ts + offset * HOUR
+  const sorted = [...events].sort((a, b) => a.ts - b.ts)
+  const first = sorted[0].ts + offset * HOUR
+  const last = sorted[sorted.length - 1].ts + offset * HOUR
   const start = Math.floor(first / DAY) * DAY
   const end = Math.floor(last / DAY) * DAY
 
@@ -142,12 +151,43 @@ export function dailySeries(zone: Zone): DayPoint[] {
   return out
 }
 
+export type CompareSeries = {
+  key: string
+  label: string
+  /** Logins per calendar day-of-month, so different months line up for comparison. */
+  points: { day: number; logins: number }[]
+}
+
+/**
+ * One daily-logins series per given month, indexed by day-of-month (1-31)
+ * instead of an absolute date, so e.g. July and August overlay on the same
+ * axis. A month only observed through day 10 (partial data) simply stops
+ * there rather than being padded with misleading zeros for the rest of the
+ * month.
+ */
+export function compareMonths(
+  events: LoginEvent[],
+  zone: Zone,
+  monthKeys: string[],
+  monthLabels: Map<string, string>,
+): CompareSeries[] {
+  return monthKeys.map((key) => {
+    const monthEvents = events.filter((e) => monthKeyOf(e.ts, zone) === key)
+    const series = dailySeries(monthEvents, zone)
+    return {
+      key,
+      label: monthLabels.get(key) ?? key,
+      points: series.map((p) => ({ day: Number(p.date.slice(-2)), logins: p.logins })),
+    }
+  })
+}
+
 export type WeekdayBucket = { weekday: string; logins: number }
 
-export function aggregateByWeekday(zone: Zone): WeekdayBucket[] {
+export function aggregateByWeekday(events: LoginEvent[], zone: Zone): WeekdayBucket[] {
   const offset = ZONE_OFFSET[zone]
   const counts = new Array(7).fill(0) as number[]
-  for (const e of loginEvents) counts[parts(e.ts, offset).weekday] += 1
+  for (const e of events) counts[parts(e.ts, offset).weekday] += 1
   // Monday-first ordering reads better for business traffic.
   const order = [1, 2, 3, 4, 5, 6, 0]
   return order.map((i) => ({ weekday: WEEKDAYS[i], logins: counts[i] }))
@@ -159,19 +199,35 @@ export type Summary = {
   activeDays: number
   perDay: number
   peakHour: HourBucket
-  peakDay: DayPoint
+  peakDay: DayPoint | null
   quietDays: number
   workingHoursShare: number
 }
 
-export function summarize(zone: Zone): Summary {
-  const hours = aggregateByHour(zone)
-  const days = dailySeries(zone)
+const EMPTY_HOUR: HourBucket = { hour: 0, label: "00:00", logins: 0, share: 0 }
+
+export function summarize(events: LoginEvent[], zone: Zone): Summary {
+  const hours = aggregateByHour(events, zone)
+  const days = dailySeries(events, zone)
+  const total = events.length
+
+  if (total === 0) {
+    return {
+      total: 0,
+      days: 0,
+      activeDays: 0,
+      perDay: 0,
+      peakHour: EMPTY_HOUR,
+      peakDay: null,
+      quietDays: 0,
+      workingHoursShare: 0,
+    }
+  }
+
   const peakHour = hours.reduce((a, b) => (b.logins > a.logins ? b : a))
   const peakDay = days.reduce((a, b) => (b.logins > a.logins ? b : a))
   const activeDays = days.filter((d) => d.logins > 0).length
   const working = hours.filter((h) => h.hour >= 8 && h.hour < 18).reduce((s, h) => s + h.logins, 0)
-  const total = loginEvents.length
   return {
     total,
     days: days.length,
@@ -184,7 +240,8 @@ export function summarize(zone: Zone): Summary {
   }
 }
 
-export function formatRange(zone: Zone) {
-  const days = dailySeries(zone)
-  return `${days[0].label} – ${days[days.length - 1].label}, 2026`
+export function formatRange(events: LoginEvent[], zone: Zone) {
+  const days = dailySeries(events, zone)
+  if (days.length === 0) return "no data"
+  return `${days[0].label} – ${days[days.length - 1].label}`
 }
