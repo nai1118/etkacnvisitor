@@ -117,8 +117,9 @@ const en: Dict = {
   bucketIn: "Bucket in",
   langLabel: "Language",
 
-  dataSourceTitle: "Data source",
-  dataSourceDescSample: "Showing the bundled sample export. Upload your own visitor access-timestamp PDF to replace it.",
+  dataSourceTitle: "Data Source",
+  dataSourceDescSample:
+    "Data is based on ETKA.COM.CN News visitor access records. Upload the monthly timestamp PDF to display the corresponding month's data analysis.",
   dataSourceDescCustom: "Charts below reflect the timestamps parsed from your uploaded PDF(s).",
   sampleDataSuffix: "(sample data)",
 
