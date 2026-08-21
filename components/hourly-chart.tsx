@@ -4,12 +4,14 @@ import { Bar, BarChart, Cell, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import type { HourBucket } from "@/lib/aggregate"
+import { T, type Lang } from "@/lib/i18n"
 
 const config = {
   logins: { label: "Logins", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
-export function HourlyChart({ data }: { data: HourBucket[] }) {
+export function HourlyChart({ data, lang = "en" }: { data: HourBucket[]; lang?: Lang }) {
+  const t = T[lang]
   const peak = Math.max(...data.map((d) => d.logins))
 
   return (
@@ -38,7 +40,7 @@ export function HourlyChart({ data }: { data: HourBucket[] }) {
                 const p = item?.payload as HourBucket
                 return (
                   <span className="flex w-full justify-between gap-4">
-                    <span className="text-muted-foreground">logins</span>
+                    <span className="text-muted-foreground">{t.chartLoginsWord}</span>
                     <span className="tabular-nums">
                       {value as number} · {(p.share * 100).toFixed(1)}%
                     </span>

@@ -4,6 +4,7 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import type { CompareSeries } from "@/lib/aggregate"
+import { T, type Lang } from "@/lib/i18n"
 
 export const COMPARE_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-5)", "var(--chart-3)", "var(--chart-4)"]
 const COLORS = COMPARE_COLORS
@@ -24,7 +25,8 @@ function buildRows(series: CompareSeries[]): Row[] {
   return rows
 }
 
-export function CompareTrendChart({ series }: { series: CompareSeries[] }) {
+export function CompareTrendChart({ series, lang = "en" }: { series: CompareSeries[]; lang?: Lang }) {
+  const t = T[lang]
   const rows = buildRows(series)
   const config = Object.fromEntries(
     series.map((s, i) => [s.key, { label: s.label, color: COLORS[i % COLORS.length] }]),
@@ -51,7 +53,7 @@ export function CompareTrendChart({ series }: { series: CompareSeries[] }) {
           content={
             <ChartTooltipContent
               className="font-mono"
-              labelFormatter={(value) => `Day ${String(value).padStart(2, "0")}`}
+              labelFormatter={(value) => t.compareDayLabel(String(value).padStart(2, "0"))}
             />
           }
         />

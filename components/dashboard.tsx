@@ -12,9 +12,9 @@ import { WeekdayBars } from "@/components/weekday-chart"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { SAMPLE_SOURCE_LABEL, sampleLoginEvents, type LoginEvent } from "@/lib/login-log"
+import { SAMPLE_SOURCE_FILENAME, sampleLoginEvents, type LoginEvent } from "@/lib/login-log"
+import { LANGS, LANG_LABEL, T, ZONE_LABEL, type Lang } from "@/lib/i18n"
 import {
-  ZONE_LABEL,
   aggregateByHour,
   aggregateByMonth,
   aggregateByWeekday,
@@ -25,13 +25,6 @@ import {
   summarize,
   type Zone,
 } from "@/lib/aggregate"
-
-const BANDS: { label: string; from: number; to: number }[] = [
-  { label: "00–06 night", from: 0, to: 6 },
-  { label: "06–12 morning", from: 6, to: 12 },
-  { label: "12–18 afternoon", from: 12, to: 18 },
-  { label: "18–24 evening", from: 18, to: 24 },
-]
 
 const ALL_MONTHS = "all"
 
@@ -55,9 +48,18 @@ function pillClass(active: boolean) {
 
 export function Dashboard() {
   const [zone, setZone] = useState<Zone>("cn")
+  const [lang, setLang] = useState<Lang>("en")
   const [sources, setSources] = useState<UploadedSource[]>([])
   const [page, setPage] = useState<string>(ALL_MONTHS)
   const [compareKeys, setCompareKeys] = useState<string[]>([])
+
+  const t = T[lang]
+  const BANDS: { label: string; from: number; to: number }[] = [
+    { label: t.bandNight, from: 0, to: 6 },
+    { label: t.bandMorning, from: 6, to: 12 },
+    { label: t.bandAfternoon, from: 12, to: 18 },
+    { label: t.bandEvening, from: 18, to: 24 },
+  ]
 
   const handleAdd = useCallback((source: UploadedSource) => {
     setSources((prev) => [...prev, source])
@@ -73,7 +75,7 @@ export function Dashboard() {
 
   // Always computed over the full dataset, regardless of which month page is
   // active, so the "By month" card stays a stable overview / page switcher.
-  const months = useMemo(() => aggregateByMonth(events, zone), [events, zone])
+  const months = useMemo(() => aggregateByMonth(events, zone, lang), [events, zone, lang])
 
   // If the active page's month disappears (new upload, zone flip that
   // reshuffles month boundaries, etc.) fall back to the "all months" page.
@@ -112,12 +114,12 @@ export function Dashboard() {
   const { hours, days, weekdays, summary, range } = useMemo(
     () => ({
       hours: aggregateByHour(pageEvents, zone),
-      days: dailySeries(pageEvents, zone),
-      weekdays: aggregateByWeekday(pageEvents, zone),
-      summary: summarize(pageEvents, zone),
-      range: formatRange(pageEvents, zone),
+      days: dailySeries(pageEvents, zone, lang),
+      weekdays: aggregateByWeekday(pageEvents, zone, lang),
+      summary: summarize(pageEvents, zone, lang),
+      range: formatRange(pageEvents, zone, lang),
     }),
-    [pageEvents, zone],
+    [pageEvents, zone, lang],
   )
 
   const bands = BANDS.map((b) => ({
@@ -125,45 +127,45 @@ export function Dashboard() {
     logins: hours.slice(b.from, b.to).reduce((s, h) => s + h.logins, 0),
   }))
 
-  const sourceLabel = usingSample ? SAMPLE_SOURCE_LABEL : sources.map((s) => s.fileName).join(", ")
-  const pageLabel = page === ALL_MONTHS ? null : months.find((m) => m.key === page)?.label
+  const sourceLabel = usingSample
+    ? `${SAMPLE_SOURCE_FILENAME} ${t.sampleDataSuffix}`
+    : sources.map((s) => s.fileName).join(", ")
+  const pageLabel = page === ALL_MONTHS ? null : (months.find((m) => m.key === page)?.label ?? null)
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
       <header className="grid-paper -mx-4 mb-8 border-b border-border px-4 pb-8 pt-10 sm:-mx-6 sm:px-6">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          etka.com.cn / etkaportalcn / zh-cn / login / news
-        </p>
-        <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Visitor login timestamp analytics
-        </h1>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground text-pretty">
-          {summary.total} login events {usingSample ? "from the bundled sample export" : "parsed from your uploaded PDF(s)"}
-          {pageLabel ? ` for ${pageLabel}` : ""}, aggregated by hour of day, by weekday and by month. Observation
-          window {range}.
-        </p>
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Bucket in</span>
-          <div className="inline-flex rounded-sm border border-border bg-card p-0.5" role="group" aria-label="Timezone">
-            {(["cn", "utc"] as Zone[]).map((z) => (
-              <button key={z} type="button" onClick={() => setZone(z)} aria-pressed={zone === z} className={pillClass(zone === z)}>
-                {ZONE_LABEL[z]}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{t.breadcrumb}</p>
+          <div className="inline-flex rounded-sm border border-border bg-card p-0.5" role="group" aria-label={t.langLabel}>
+            {LANGS.map((l) => (
+              <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={pillClass(lang === l)}>
+                {LANG_LABEL[l]}
               </button>
             ))}
           </div>
         </div>
+        <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{t.title}</h1>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground text-pretty">
+          {t.intro({ total: summary.total, usingSample, pageLabel, range })}
+        </p>
 
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{t.bucketIn}</span>
+          <div className="inline-flex rounded-sm border border-border bg-card p-0.5" role="group" aria-label="Timezone">
+            {(["cn", "utc"] as Zone[]).map((z) => (
+              <button key={z} type="button" onClick={() => setZone(z)} aria-pressed={zone === z} className={pillClass(zone === z)}>
+                {ZONE_LABEL[lang][z]}
+              </button>
+            ))}
+          </div>
+        </div>
       </header>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Data source</CardTitle>
-          <CardDescription>
-            {usingSample
-              ? "Showing the bundled sample export. Upload your own visitor login-timestamp PDF to replace it."
-              : "Charts below reflect the timestamps parsed from your uploaded PDF(s)."}
-          </CardDescription>
+          <CardTitle className="text-base">{t.dataSourceTitle}</CardTitle>
+          <CardDescription>{usingSample ? t.dataSourceDescSample : t.dataSourceDescCustom}</CardDescription>
         </CardHeader>
         <CardContent>
           <PdfUpload
@@ -172,6 +174,7 @@ export function Dashboard() {
             onRemove={handleRemove}
             onReset={handleReset}
             usingSample={usingSample}
+            lang={lang}
           />
         </CardContent>
       </Card>
@@ -180,42 +183,40 @@ export function Dashboard() {
         aria-label="Summary"
         className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border sm:grid-cols-4"
       >
-        <Stat label="Total logins" value={summary.total.toString()} note={`${summary.activeDays} active days`} />
-        <Stat label="Logins / day" value={summary.perDay.toFixed(2)} note={`${summary.quietDays} days with none`} />
+        <Stat label={t.statTotalLogins} value={summary.total.toString()} note={t.statTotalLoginsNote(summary.activeDays)} />
+        <Stat label={t.statLoginsPerDay} value={summary.perDay.toFixed(2)} note={t.statLoginsPerDayNote(summary.quietDays)} />
         <Stat
-          label="Peak hour"
+          label={t.statPeakHour}
           value={summary.peakHour.label}
-          note={`${summary.peakHour.logins} logins · ${(summary.peakHour.share * 100).toFixed(1)}%`}
+          note={t.statPeakHourNote(summary.peakHour.logins, (summary.peakHour.share * 100).toFixed(1))}
         />
         <Stat
-          label="Busiest day"
+          label={t.statBusiestDay}
           value={summary.peakDay?.label ?? "–"}
-          note={summary.peakDay ? `${summary.peakDay.logins} logins · ${summary.peakDay.weekday}` : "no data"}
+          note={summary.peakDay ? t.statBusiestDayNote(summary.peakDay.logins, summary.peakDay.weekday) : t.statBusiestDayNoData}
         />
       </section>
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">Visitor trend</CardTitle>
+          <CardTitle className="text-base">{t.visitorTrendTitle}</CardTitle>
           <CardDescription>
-            {isComparing
-              ? `Comparing ${compareSeries.map((s) => s.label).join(" vs ")}, lined up by day of month.`
-              : "Daily logins with a 7-day rolling average. Days without a single login are kept as zeros so the gaps stay visible."}
+            {isComparing ? t.visitorTrendDescCompare(compareSeries.map((s) => s.label).join(" vs ")) : t.visitorTrendDescNormal}
           </CardDescription>
           <CardAction className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Page</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{t.pageLabel}</span>
               <Select value={page} onValueChange={(v) => setPage(v ?? ALL_MONTHS)}>
-                <SelectTrigger size="sm" className="min-w-32 font-mono text-xs" aria-label="Month page">
-                  <SelectValue placeholder="All months">
+                <SelectTrigger size="sm" className="min-w-32 font-mono text-xs" aria-label={t.pageLabel}>
+                  <SelectValue placeholder={t.allMonths}>
                     {(v: string | null) =>
-                      v === null || v === ALL_MONTHS ? "All months" : (months.find((m) => m.key === v)?.label ?? v)
+                      v === null || v === ALL_MONTHS ? t.allMonths : (months.find((m) => m.key === v)?.label ?? v)
                     }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_MONTHS} className="font-mono text-xs">
-                    All months
+                    {t.allMonths}
                   </SelectItem>
                   {months.map((m) => (
                     <SelectItem key={m.key} value={m.key} className="font-mono text-xs">
@@ -227,11 +228,11 @@ export function Dashboard() {
             </div>
             {months.length >= 2 && (
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Compare</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{t.compareLabel}</span>
                 <div
                   className="inline-flex flex-wrap gap-0.5 rounded-sm border border-border bg-card p-0.5"
                   role="group"
-                  aria-label="Compare months"
+                  aria-label={t.compareLabel}
                 >
                   {months.map((m) => (
                     <button
@@ -251,9 +252,9 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           {isComparing ? (
-            <CompareTrendChart series={compareSeries} />
+            <CompareTrendChart series={compareSeries} lang={lang} />
           ) : (
-            <TrendChart data={days} average={summary.perDay} />
+            <TrendChart data={days} average={summary.perDay} lang={lang} />
           )}
           <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-muted-foreground">
             {isComparing ? (
@@ -261,14 +262,17 @@ export function Dashboard() {
                 <Legend
                   key={s.key}
                   color={COMPARE_COLORS[i % COMPARE_COLORS.length]}
-                  label={`${s.label} · ${s.points.reduce((sum, p) => sum + p.logins, 0)} logins`}
+                  label={t.compareLegendItem(
+                    s.label,
+                    s.points.reduce((sum, p) => sum + p.logins, 0),
+                  )}
                 />
               ))
             ) : (
               <>
-                <Legend color="var(--chart-1)" label="Logins per day" />
-                <Legend color="var(--chart-2)" label="7-day rolling average" dashed />
-                <span>mean {summary.perDay.toFixed(2)} / day</span>
+                <Legend color="var(--chart-1)" label={t.legendLoginsPerDay} />
+                <Legend color="var(--chart-2)" label={t.legendRollingAvg} dashed />
+                <span>{t.legendMean(summary.perDay.toFixed(2))}</span>
               </>
             )}
           </div>
@@ -278,13 +282,11 @@ export function Dashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">By hour of day</CardTitle>
-            <CardDescription>
-              All {summary.total} events folded into 24 buckets, {ZONE_LABEL[zone]} wall clock.
-            </CardDescription>
+            <CardTitle className="text-base">{t.byHourTitle}</CardTitle>
+            <CardDescription>{t.byHourDesc(summary.total, ZONE_LABEL[lang][zone])}</CardDescription>
           </CardHeader>
           <CardContent>
-            <HourlyChart data={hours} />
+            <HourlyChart data={hours} lang={lang} />
             <dl className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-border sm:grid-cols-4">
               {bands.map((b) => (
                 <div key={b.label} className="bg-card px-3 py-2.5">
@@ -300,8 +302,7 @@ export function Dashboard() {
             </dl>
             <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
               <Clock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-              {(summary.workingHoursShare * 100).toFixed(0)}% of all logins land inside 08:00–18:00 {ZONE_LABEL[zone]},
-              with the single busiest hour at {summary.peakHour.label}.
+              {t.workingHoursNote((summary.workingHoursShare * 100).toFixed(0), ZONE_LABEL[lang][zone], summary.peakHour.label)}
             </p>
           </CardContent>
         </Card>
@@ -309,13 +310,11 @@ export function Dashboard() {
         <div className="grid content-start gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">By month</CardTitle>
-              <CardDescription>
-                Normalised to logins per observed day. Click a month to open its page above.
-              </CardDescription>
+              <CardTitle className="text-base">{t.byMonthTitle}</CardTitle>
+              <CardDescription>{t.byMonthDesc}</CardDescription>
             </CardHeader>
             <CardContent>
-              <MonthlyChart data={months} activeKey={page === ALL_MONTHS ? undefined : page} onSelect={setPage} />
+              <MonthlyChart data={months} activeKey={page === ALL_MONTHS ? undefined : page} onSelect={setPage} lang={lang} />
               <ul className="mt-4 grid gap-1 border-t border-border pt-4">
                 {months.map((m) => (
                   <li key={m.key}>
@@ -329,9 +328,7 @@ export function Dashboard() {
                       )}
                     >
                       <span>{m.label}</span>
-                      <span className="tabular-nums">
-                        {m.logins} logins / {m.daysObserved} d
-                      </span>
+                      <span className="tabular-nums">{t.byMonthListItem(m.logins, m.daysObserved)}</span>
                     </button>
                   </li>
                 ))}
@@ -341,8 +338,8 @@ export function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">By weekday</CardTitle>
-              <CardDescription>Weekend buckets shown in grey.</CardDescription>
+              <CardTitle className="text-base">{t.byWeekdayTitle}</CardTitle>
+              <CardDescription>{t.byWeekdayDesc}</CardDescription>
             </CardHeader>
             <CardContent>
               <WeekdayBars data={weekdays} />
@@ -354,13 +351,13 @@ export function Dashboard() {
       <footer className="mt-8 grid gap-2 rounded-sm border border-dashed border-border px-4 py-4 text-xs leading-relaxed text-muted-foreground">
         <p className="flex items-start gap-2">
           <Database className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          Source: <span className="font-mono">{sourceLabel}</span>. Rows appearing in multiple exports were
-          de-duplicated.
+          <span>
+            {t.footerSourcePrefix} <span className="font-mono">{sourceLabel}</span>. {t.footerSourceSuffix}
+          </span>
         </p>
         <p className="flex items-start gap-2">
           <Sunrise className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          Timestamps are stored in UTC; China time is derived as UTC+8, which can shift an event into the next calendar
-          day.
+          {t.footerTz}
         </p>
       </footer>
     </main>

@@ -6,6 +6,7 @@ import { FileText, Loader2, RotateCcw, Upload, X } from "lucide-react"
 import { parsePdfFile } from "@/lib/parse-pdf"
 import type { LoginEvent } from "@/lib/login-log"
 import { cn } from "@/lib/utils"
+import { T, type Lang } from "@/lib/i18n"
 
 export type UploadedSource = {
   id: string
@@ -21,13 +22,16 @@ export function PdfUpload({
   onRemove,
   onReset,
   usingSample,
+  lang = "en",
 }: {
   sources: UploadedSource[]
   onAdd: (source: UploadedSource) => void
   onRemove: (id: string) => void
   onReset: () => void
   usingSample: boolean
+  lang?: Lang
 }) {
+  const t = T[lang]
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
@@ -40,7 +44,7 @@ export function PdfUpload({
         (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"),
       )
       if (files.length === 0) {
-        setError("Please choose a PDF file.")
+        setError(t.uploadChooseError)
         return
       }
       setBusy(true)
@@ -58,18 +62,18 @@ export function PdfUpload({
           })
           setNotice(
             result.warnings.length > 0
-              ? `${result.fileName}: ${result.warnings[0]}`
-              : `${result.fileName}: parsed ${result.events.length} timestamp${result.events.length === 1 ? "" : "s"} from ${result.pageCount} page${result.pageCount === 1 ? "" : "s"}.`,
+              ? t.uploadWarningNotice(result.fileName, result.warnings[0])
+              : t.uploadParsedNotice(result.fileName, result.events.length, result.pageCount),
           )
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not read that PDF.")
+        setError(err instanceof Error ? err.message : t.uploadGenericError)
       } finally {
         setBusy(false)
         if (inputRef.current) inputRef.current.value = ""
       }
     },
-    [onAdd],
+    [onAdd, t],
   )
 
   return (
@@ -111,11 +115,8 @@ export function PdfUpload({
         ) : (
           <Upload className="size-5 text-muted-foreground" aria-hidden />
         )}
-        <p className="text-sm font-medium">{busy ? "Parsing PDF…" : "Drop a login-log PDF here, or click to choose"}</p>
-        <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-          Timestamps are extracted and aggregated entirely in your browser — the file isn&apos;t uploaded anywhere.
-          Multiple files are merged and de-duplicated.
-        </p>
+        <p className="text-sm font-medium">{busy ? t.uploadBusyText : t.uploadIdleText}</p>
+        <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">{t.uploadHint}</p>
       </div>
 
       {error && (
@@ -142,12 +143,12 @@ export function PdfUpload({
               </span>
               <span className="flex shrink-0 items-center gap-3">
                 <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                  {s.events.length} event{s.events.length === 1 ? "" : "s"}
+                  {t.eventCount(s.events.length)}
                 </span>
                 <button
                   type="button"
                   onClick={() => onRemove(s.id)}
-                  aria-label={`Remove ${s.fileName}`}
+                  aria-label={t.removeFileLabel(s.fileName)}
                   className="text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <X className="size-3.5" aria-hidden />
@@ -165,7 +166,7 @@ export function PdfUpload({
           className="inline-flex w-fit items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground"
         >
           <RotateCcw className="size-3" aria-hidden />
-          Clear uploads, show sample data
+          {t.clearUploads}
         </button>
       )}
     </div>

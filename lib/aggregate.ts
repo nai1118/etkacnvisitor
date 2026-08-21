@@ -1,15 +1,11 @@
 import type { LoginEvent } from "./login-log"
+import { formatDayLabel, formatMonthLabel, WEEKDAY_NAMES, type Lang } from "./i18n"
 
 export type Zone = "utc" | "cn"
 
 export const ZONE_OFFSET: Record<Zone, number> = {
   utc: 0,
   cn: 8,
-}
-
-export const ZONE_LABEL: Record<Zone, string> = {
-  utc: "UTC",
-  cn: "China (UTC+8)",
 }
 
 const HOUR = 3600_000
@@ -38,11 +34,9 @@ export function monthKeyOf(ts: number, zone: Zone): string {
   return `${p.year}-${String(p.month + 1).padStart(2, "0")}`
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-
 export type HourBucket = { hour: number; label: string; logins: number; share: number }
 
+// Hour labels ("00:00") are language-neutral, so aggregateByHour needs no lang param.
 export function aggregateByHour(events: LoginEvent[], zone: Zone): HourBucket[] {
   const offset = ZONE_OFFSET[zone]
   const counts = new Array(24).fill(0) as number[]
@@ -66,7 +60,7 @@ export type MonthBucket = {
   peakHour: number
 }
 
-export function aggregateByMonth(events: LoginEvent[], zone: Zone): MonthBucket[] {
+export function aggregateByMonth(events: LoginEvent[], zone: Zone, lang: Lang = "en"): MonthBucket[] {
   const offset = ZONE_OFFSET[zone]
   const map = new Map<string, { label: string; logins: number; days: Set<string>; hours: number[] }>()
 
@@ -75,7 +69,7 @@ export function aggregateByMonth(events: LoginEvent[], zone: Zone): MonthBucket[
     const key = `${p.year}-${String(p.month + 1).padStart(2, "0")}`
     let bucket = map.get(key)
     if (!bucket) {
-      bucket = { label: `${MONTHS[p.month]} ${p.year}`, logins: 0, days: new Set(), hours: new Array(24).fill(0) }
+      bucket = { label: formatMonthLabel(lang, p.month, p.year), logins: 0, days: new Set(), hours: new Array(24).fill(0) }
       map.set(key, bucket)
     }
     bucket.logins += 1
@@ -83,7 +77,7 @@ export function aggregateByMonth(events: LoginEvent[], zone: Zone): MonthBucket[
     bucket.hours[p.hour] += 1
   }
 
-  const days = dailySeries(events, zone)
+  const days = dailySeries(events, zone, lang)
   return [...map.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, b]) => {
@@ -113,7 +107,7 @@ export type DayPoint = {
 }
 
 /** Continuous daily series across the observed window (gaps filled with 0). */
-export function dailySeries(events: LoginEvent[], zone: Zone): DayPoint[] {
+export function dailySeries(events: LoginEvent[], zone: Zone, lang: Lang = "en"): DayPoint[] {
   if (events.length === 0) return []
 
   const offset = ZONE_OFFSET[zone]
@@ -135,8 +129,8 @@ export function dailySeries(events: LoginEvent[], zone: Zone): DayPoint[] {
     const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`
     out.push({
       date: key,
-      label: `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`,
-      weekday: WEEKDAYS[d.getUTCDay()],
+      label: formatDayLabel(lang, d.getUTCMonth(), d.getUTCDate()),
+      weekday: WEEKDAY_NAMES[lang][d.getUTCDay()],
       logins: counts.get(key) ?? 0,
       rolling: 0,
     })
@@ -163,7 +157,8 @@ export type CompareSeries = {
  * instead of an absolute date, so e.g. July and August overlay on the same
  * axis. A month only observed through day 10 (partial data) simply stops
  * there rather than being padded with misleading zeros for the rest of the
- * month.
+ * month. Labels are passed in (already localized via aggregateByMonth)
+ * rather than recomputed here.
  */
 export function compareMonths(
   events: LoginEvent[],
@@ -182,15 +177,20 @@ export function compareMonths(
   })
 }
 
-export type WeekdayBucket = { weekday: string; logins: number }
+export type WeekdayBucket = { weekday: string; logins: number; isWeekend: boolean }
 
-export function aggregateByWeekday(events: LoginEvent[], zone: Zone): WeekdayBucket[] {
+export function aggregateByWeekday(events: LoginEvent[], zone: Zone, lang: Lang = "en"): WeekdayBucket[] {
   const offset = ZONE_OFFSET[zone]
   const counts = new Array(7).fill(0) as number[]
   for (const e of events) counts[parts(e.ts, offset).weekday] += 1
-  // Monday-first ordering reads better for business traffic.
+  // Monday-first ordering reads better for business traffic. Indices are
+  // JS's Sun=0..Sat=6; 6 and 0 (Sat, Sun) are the weekend.
   const order = [1, 2, 3, 4, 5, 6, 0]
-  return order.map((i) => ({ weekday: WEEKDAYS[i], logins: counts[i] }))
+  return order.map((i) => ({
+    weekday: WEEKDAY_NAMES[lang][i],
+    logins: counts[i],
+    isWeekend: i === 0 || i === 6,
+  }))
 }
 
 export type Summary = {
@@ -206,9 +206,9 @@ export type Summary = {
 
 const EMPTY_HOUR: HourBucket = { hour: 0, label: "00:00", logins: 0, share: 0 }
 
-export function summarize(events: LoginEvent[], zone: Zone): Summary {
+export function summarize(events: LoginEvent[], zone: Zone, lang: Lang = "en"): Summary {
   const hours = aggregateByHour(events, zone)
-  const days = dailySeries(events, zone)
+  const days = dailySeries(events, zone, lang)
   const total = events.length
 
   if (total === 0) {
@@ -240,8 +240,8 @@ export function summarize(events: LoginEvent[], zone: Zone): Summary {
   }
 }
 
-export function formatRange(events: LoginEvent[], zone: Zone) {
-  const days = dailySeries(events, zone)
-  if (days.length === 0) return "no data"
+export function formatRange(events: LoginEvent[], zone: Zone, lang: Lang = "en") {
+  const days = dailySeries(events, zone, lang)
+  if (days.length === 0) return lang === "zh" ? "無資料" : "no data"
   return `${days[0].label} – ${days[days.length - 1].label}`
 }

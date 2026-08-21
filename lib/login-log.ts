@@ -62,4 +62,4 @@ export const sampleLoginEvents: LoginEvent[] = RAW.flatMap(([date, times]) =>
   times.map((t) => ({ ts: Date.parse(`${date}T${t}Z`) })),
 ).sort((a, b) => a.ts - b.ts)
 
-export const SAMPLE_SOURCE_LABEL = "etka_zh-cn_login_news (sample data)"
+export const SAMPLE_SOURCE_FILENAME = "etka_zh-cn_login_news"
