@@ -69,6 +69,10 @@ export type Dict = {
   legendMean: (v: string) => string
   compareLegendItem: (label: string, logins: number) => string
 
+  compareSourcesTitle: string
+  compareSourcesDesc: string
+  compareSourcesPrompt: string
+
   byHourTitle: string
   byHourDesc: (total: number, zone: string) => string
   byHourDayLabel: string
@@ -147,6 +151,10 @@ const en: Dict = {
   legendMean: (v) => `mean ${v} / day`,
   compareLegendItem: (label, logins) => `${label} · ${logins} visits`,
 
+  compareSourcesTitle: "Compare sources",
+  compareSourcesDesc: "Overlaying the daily trend of each uploaded file, lined up by calendar date.",
+  compareSourcesPrompt: "Select two or more files above to overlay their trends.",
+
   byHourTitle: "By hour of day",
   byHourDesc: (total, zone) => `All ${total} events folded into 24 buckets, ${zone} wall clock.`,
   byHourDayLabel: "Date",
@@ -224,6 +232,10 @@ const zh: Dict = {
   legendRollingAvg: "7 天滚动平均",
   legendMean: (v) => `平均 ${v} / 天`,
   compareLegendItem: (label, logins) => `${label} · 共 ${logins} 笔访问`,
+
+  compareSourcesTitle: "比较来源",
+  compareSourcesDesc: "依日历日期对齐,叠加显示每个已上传文件的每日趋势。",
+  compareSourcesPrompt: "请在上方至少选择两个文件,以叠加显示趋势。",
 
   byHourTitle: "依小时分布",
   byHourDesc: (total, zone) => `全部 ${total} 笔事件依 ${zone} 时间归入 24 个小时区间。`,

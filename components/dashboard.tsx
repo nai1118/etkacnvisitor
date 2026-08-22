@@ -7,6 +7,7 @@ import { CompareTrendChart, COMPARE_COLORS } from "@/components/compare-trend-ch
 import { HourlyChart } from "@/components/hourly-chart"
 import { MonthlyChart } from "@/components/monthly-chart"
 import { PdfUpload, type UploadedSource } from "@/components/pdf-upload"
+import { SourceCompareChart, SOURCE_COMPARE_COLORS } from "@/components/source-compare-chart"
 import { TrendChart } from "@/components/trend-chart"
 import { WeekdayBars } from "@/components/weekday-chart"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,6 +56,7 @@ export function Dashboard() {
   const [page, setPage] = useState<string>(ALL_MONTHS)
   const [compareKeys, setCompareKeys] = useState<string[]>([])
   const [hourDay, setHourDay] = useState<string>(ALL_DAYS)
+  const [compareSourceKeys, setCompareSourceKeys] = useState<string[]>([])
 
   const t = T[lang]
   const BANDS: { label: string; from: number; to: number }[] = [
@@ -75,6 +77,28 @@ export function Dashboard() {
   const customEvents = useMemo(() => dedupeEvents(sources.flatMap((s) => s.events)), [sources])
   const usingSample = customEvents.length === 0
   const events = usingSample ? sampleLoginEvents : customEvents
+
+  // Default to comparing every uploaded file whenever the set of sources
+  // changes, so e.g. uploading two files immediately shows them overlaid;
+  // the pills below still let the user narrow the selection down.
+  useEffect(() => {
+    setCompareSourceKeys(sources.map((s) => s.id))
+  }, [sources])
+
+  const toggleCompareSource = useCallback((id: string) => {
+    setCompareSourceKeys((prev) => (prev.includes(id) ? prev.filter((k) => k !== id) : [...prev, id]))
+  }, [])
+
+  const sourceCompareSeries = useMemo(() => {
+    if (sources.length < 2) return []
+    return sources
+      .filter((s) => compareSourceKeys.includes(s.id))
+      .map((s) => ({
+        key: s.id,
+        label: s.fileName.replace(/\.pdf$/i, ""),
+        points: dailySeries(dedupeEvents(s.events), zone, lang),
+      }))
+  }, [sources, compareSourceKeys, zone, lang])
 
   // Always computed over the full dataset, regardless of which month page is
   // active, so the "By month" card stays a stable overview / page switcher.
@@ -306,6 +330,53 @@ export function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {sources.length >= 2 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-base">{t.compareSourcesTitle}</CardTitle>
+            <CardDescription>{t.compareSourcesDesc}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="mb-4 inline-flex flex-wrap gap-0.5 rounded-sm border border-border bg-card p-0.5"
+              role="group"
+              aria-label={t.compareLabel}
+            >
+              {sources.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => toggleCompareSource(s.id)}
+                  aria-pressed={compareSourceKeys.includes(s.id)}
+                  className={pillClass(compareSourceKeys.includes(s.id))}
+                >
+                  {s.fileName.replace(/\.pdf$/i, "")}
+                </button>
+              ))}
+            </div>
+            {sourceCompareSeries.length >= 2 ? (
+              <>
+                <SourceCompareChart series={sourceCompareSeries} lang={lang} />
+                <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] text-muted-foreground">
+                  {sourceCompareSeries.map((s, i) => (
+                    <Legend
+                      key={s.key}
+                      color={SOURCE_COMPARE_COLORS[i % SOURCE_COMPARE_COLORS.length]}
+                      label={t.compareLegendItem(
+                        s.label,
+                        s.points.reduce((sum, p) => sum + p.logins, 0),
+                      )}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t.compareSourcesPrompt}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_1fr]">
         <Card>
