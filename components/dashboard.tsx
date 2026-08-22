@@ -42,6 +42,19 @@ function dedupeEvents(events: LoginEvent[]): LoginEvent[] {
   return out.sort((a, b) => a.ts - b.ts)
 }
 
+/**
+ * The main dashboard (stat cards, Visitor trend, by-hour/month/weekday) is
+ * scoped to the China (zh-cn) portal only — that's the primary thing being
+ * analysed. Uploading the English-portal export too shouldn't inflate or
+ * blend into those numbers; it should only show up, side by side with the
+ * China file, in the "Compare sources" card below. We tell the two apart by
+ * filename, matching the site's own "zh-cn" / "en" portal-path convention
+ * (e.g. "etka_zh-cn_login_news.pdf" vs "etka_en_login_news.pdf").
+ */
+function isChinaSource(fileName: string): boolean {
+  return /zh[-_]?cn/i.test(fileName)
+}
+
 function pillClass(active: boolean) {
   return cn(
     "rounded-[2px] px-3 py-1.5 font-mono text-xs transition-colors",
@@ -74,7 +87,12 @@ export function Dashboard() {
   }, [])
   const handleReset = useCallback(() => setSources([]), [])
 
-  const customEvents = useMemo(() => dedupeEvents(sources.flatMap((s) => s.events)), [sources])
+  // Only China-portal uploads feed the main dashboard; other-language
+  // uploads (e.g. the English portal) still show up in `sources` for the
+  // Compare sources card, just not blended into the primary numbers.
+  const primarySources = useMemo(() => sources.filter((s) => isChinaSource(s.fileName)), [sources])
+  const hasNonChinaSource = useMemo(() => sources.some((s) => !isChinaSource(s.fileName)), [sources])
+  const customEvents = useMemo(() => dedupeEvents(primarySources.flatMap((s) => s.events)), [primarySources])
   const usingSample = customEvents.length === 0
   const events = usingSample ? sampleLoginEvents : customEvents
 
@@ -181,7 +199,7 @@ export function Dashboard() {
 
   const sourceLabel = usingSample
     ? `${SAMPLE_SOURCE_FILENAME} ${t.sampleDataSuffix}`
-    : sources.map((s) => s.fileName).join(", ")
+    : primarySources.map((s) => s.fileName).join(", ")
   const pageLabel = page === ALL_MONTHS ? null : (months.find((m) => m.key === page)?.label ?? null)
 
   return (
@@ -228,6 +246,7 @@ export function Dashboard() {
             usingSample={usingSample}
             lang={lang}
           />
+          {hasNonChinaSource && <p className="mt-3 text-xs text-muted-foreground">{t.nonChinaSourceNote}</p>}
         </CardContent>
       </Card>
 

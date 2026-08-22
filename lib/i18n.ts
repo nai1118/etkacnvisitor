@@ -72,6 +72,7 @@ export type Dict = {
   compareSourcesTitle: string
   compareSourcesDesc: string
   compareSourcesPrompt: string
+  nonChinaSourceNote: string
 
   byHourTitle: string
   byHourDesc: (total: number, zone: string) => string
@@ -101,6 +102,7 @@ export type Dict = {
   uploadGenericError: string
   uploadParsedNotice: (fileName: string, count: number, pages: number) => string
   uploadWarningNotice: (fileName: string, warning: string) => string
+  uploadDuplicateNotice: (fileName: string) => string
   removeFileLabel: (fileName: string) => string
   eventCount: (n: number) => string
   clearUploads: string
@@ -154,6 +156,8 @@ const en: Dict = {
   compareSourcesTitle: "Compare sources",
   compareSourcesDesc: "Overlaying the daily trend of each uploaded file, lined up by calendar date.",
   compareSourcesPrompt: "Select two or more files above to overlay their trends.",
+  nonChinaSourceNote:
+    "Only China (zh-cn) files are included in the charts above. Other files you've uploaded appear only in Compare sources below.",
 
   byHourTitle: "By hour of day",
   byHourDesc: (total, zone) => `All ${total} events folded into 24 buckets, ${zone} wall clock.`,
@@ -186,6 +190,7 @@ const en: Dict = {
   uploadParsedNotice: (fileName, count, pages) =>
     `${fileName}: parsed ${count} timestamp${count === 1 ? "" : "s"} from ${pages} page${pages === 1 ? "" : "s"}.`,
   uploadWarningNotice: (fileName, warning) => `${fileName}: ${warning}`,
+  uploadDuplicateNotice: (fileName) => `Skipped "${fileName}" — its data matches a file you already uploaded.`,
   removeFileLabel: (fileName) => `Remove ${fileName}`,
   eventCount: (n) => `${n} event${n === 1 ? "" : "s"}`,
   clearUploads: "Clear uploads, show sample data",
@@ -236,6 +241,7 @@ const zh: Dict = {
   compareSourcesTitle: "比较来源",
   compareSourcesDesc: "依日历日期对齐,叠加显示每个已上传文件的每日趋势。",
   compareSourcesPrompt: "请在上方至少选择两个文件,以叠加显示趋势。",
+  nonChinaSourceNote: "上方图表仅采用中国(zh-cn)版本的资料;你上传的其他语言版本档案只会显示在下方的「比较来源」区块。",
 
   byHourTitle: "依小时分布",
   byHourDesc: (total, zone) => `全部 ${total} 笔事件依 ${zone} 时间归入 24 个小时区间。`,
@@ -265,6 +271,7 @@ const zh: Dict = {
   uploadGenericError: "无法读取这个 PDF 档案。",
   uploadParsedNotice: (fileName, count, pages) => `${fileName}:从 ${pages} 页中解析出 ${count} 笔时间戳记。`,
   uploadWarningNotice: (fileName, warning) => `${fileName}:${warning}`,
+  uploadDuplicateNotice: (fileName) => `已跳过「${fileName}」——其数据与你已上传的文件相同。`,
   removeFileLabel: (fileName) => `移除 ${fileName}`,
   eventCount: (n) => `${n} 笔事件`,
   clearUploads: "清除上传档案,显示范例资料",

@@ -16,6 +16,17 @@ export type UploadedSource = {
   warnings: string[]
 }
 
+/** Order-independent content fingerprint, used to catch the same file (or an
+ *  identical re-export under a different name) being uploaded more than
+ *  once — a plain filename check would miss a rename, and would also wrongly
+ *  flag two different files that just happen to share a name. */
+function signatureOf(events: LoginEvent[]): string {
+  return events
+    .map((e) => e.ts)
+    .sort((a, b) => a - b)
+    .join(",")
+}
+
 export function PdfUpload({
   sources,
   onAdd,
@@ -50,9 +61,23 @@ export function PdfUpload({
       setBusy(true)
       setError(null)
       setNotice(null)
+      // Signatures already on the board, plus ones added earlier in *this*
+      // batch — `sources` won't include those yet since onAdd's state update
+      // hasn't flushed back into this closure mid-loop.
+      const existingSignatures = sources.map((s) => signatureOf(s.events))
+      const addedSignatures: string[] = []
       try {
         for (const file of files) {
           const result = await parsePdfFile(file)
+          const signature = signatureOf(result.events)
+          const isDuplicate =
+            result.events.length > 0 &&
+            (existingSignatures.includes(signature) || addedSignatures.includes(signature))
+          if (isDuplicate) {
+            setNotice(t.uploadDuplicateNotice(result.fileName))
+            continue
+          }
+          addedSignatures.push(signature)
           onAdd({
             id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             fileName: result.fileName,
@@ -73,7 +98,7 @@ export function PdfUpload({
         if (inputRef.current) inputRef.current.value = ""
       }
     },
-    [onAdd, t],
+    [onAdd, t, sources],
   )
 
   return (
