@@ -55,6 +55,25 @@ function isChinaSource(fileName: string): boolean {
   return /zh[-_]?cn/i.test(fileName)
 }
 
+/**
+ * Groups uploaded files by portal, so e.g. three separate China monthly
+ * exports collapse into one "China" line in Compare sources instead of
+ * three overlapping ones — the comparison is meant to be "China vs
+ * English", not "every uploaded file vs every other uploaded file".
+ */
+function sourceGroupKey(fileName: string): string {
+  if (isChinaSource(fileName)) return "zh-cn"
+  const m = /etka[_-]?([a-z]{2}(?:-[a-z]{2})?)[_-]?login/i.exec(fileName)
+  return m ? m[1].toLowerCase() : "other"
+}
+
+function sourceGroupLabel(key: string, lang: Lang): string {
+  if (key === "zh-cn") return lang === "zh" ? "中国 (zh-cn)" : "China (zh-cn)"
+  if (key === "en") return lang === "zh" ? "英文 (en)" : "English (en)"
+  if (key === "other") return lang === "zh" ? "其他" : "Other"
+  return key
+}
+
 function pillClass(active: boolean) {
   return cn(
     "rounded-[2px] px-3 py-1.5 font-mono text-xs transition-colors",
@@ -96,27 +115,42 @@ export function Dashboard() {
   const usingSample = customEvents.length === 0
   const events = usingSample ? sampleLoginEvents : customEvents
 
-  // Default to comparing every uploaded file whenever the set of sources
-  // changes, so e.g. uploading two files immediately shows them overlaid;
-  // the pills below still let the user narrow the selection down.
-  useEffect(() => {
-    setCompareSourceKeys(sources.map((s) => s.id))
+  // One group per portal (China, English, ...), each merging every file
+  // uploaded for that portal — so uploading several China monthly exports
+  // still counts as a single "China" line to compare, not one line per file.
+  const sourceGroups = useMemo(() => {
+    const map = new Map<string, UploadedSource[]>()
+    for (const s of sources) {
+      const key = sourceGroupKey(s.fileName)
+      const bucket = map.get(key)
+      if (bucket) bucket.push(s)
+      else map.set(key, [s])
+    }
+    // China first, then everything else alphabetically, for a stable order.
+    return new Map([...map.entries()].sort(([a], [b]) => (a === "zh-cn" ? -1 : b === "zh-cn" ? 1 : a.localeCompare(b))))
   }, [sources])
 
-  const toggleCompareSource = useCallback((id: string) => {
-    setCompareSourceKeys((prev) => (prev.includes(id) ? prev.filter((k) => k !== id) : [...prev, id]))
+  // Default to comparing every portal group whenever the set of groups
+  // changes, so e.g. uploading a China + an English file immediately shows
+  // them overlaid; the pills below still let the user narrow it down.
+  useEffect(() => {
+    setCompareSourceKeys([...sourceGroups.keys()])
+  }, [sourceGroups])
+
+  const toggleCompareSource = useCallback((key: string) => {
+    setCompareSourceKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
   }, [])
 
   const sourceCompareSeries = useMemo(() => {
-    if (sources.length < 2) return []
-    return sources
-      .filter((s) => compareSourceKeys.includes(s.id))
-      .map((s) => ({
-        key: s.id,
-        label: s.fileName.replace(/\.pdf$/i, ""),
-        points: dailySeries(dedupeEvents(s.events), zone, lang),
+    if (sourceGroups.size < 2) return []
+    return [...sourceGroups.entries()]
+      .filter(([key]) => compareSourceKeys.includes(key))
+      .map(([key, groupSources]) => ({
+        key,
+        label: sourceGroupLabel(key, lang),
+        points: dailySeries(dedupeEvents(groupSources.flatMap((s) => s.events)), zone, lang),
       }))
-  }, [sources, compareSourceKeys, zone, lang])
+  }, [sourceGroups, compareSourceKeys, zone, lang])
 
   // Always computed over the full dataset, regardless of which month page is
   // active, so the "By month" card stays a stable overview / page switcher.
@@ -350,7 +384,7 @@ export function Dashboard() {
         </CardContent>
       </Card>
 
-      {sources.length >= 2 && (
+      {sourceGroups.size >= 2 && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="text-base">{t.compareSourcesTitle}</CardTitle>
@@ -362,15 +396,15 @@ export function Dashboard() {
               role="group"
               aria-label={t.compareLabel}
             >
-              {sources.map((s) => (
+              {[...sourceGroups.keys()].map((key) => (
                 <button
-                  key={s.id}
+                  key={key}
                   type="button"
-                  onClick={() => toggleCompareSource(s.id)}
-                  aria-pressed={compareSourceKeys.includes(s.id)}
-                  className={pillClass(compareSourceKeys.includes(s.id))}
+                  onClick={() => toggleCompareSource(key)}
+                  aria-pressed={compareSourceKeys.includes(key)}
+                  className={pillClass(compareSourceKeys.includes(key))}
                 >
-                  {s.fileName.replace(/\.pdf$/i, "")}
+                  {sourceGroupLabel(key, lang)}
                 </button>
               ))}
             </div>
