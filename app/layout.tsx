@@ -1,10 +1,20 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-const jetBrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono-jet' })
+// Fonts are bundled in app/fonts so the build doesn't need to reach Google Fonts
+// (blocked on some build networks). Same fonts as before: Inter + JetBrains Mono.
+const inter = localFont({
+  src: './fonts/Inter-Variable.woff2',
+  weight: '100 900',
+  variable: '--font-inter',
+})
+const jetBrainsMono = localFont({
+  src: './fonts/JetBrainsMono-Variable.woff2',
+  weight: '100 800',
+  variable: '--font-mono-jet',
+})
 
 export const metadata: Metadata = {
   title: 'ETKA Portal · Visitor Access Analytics',
