@@ -1,4 +1,12 @@
 # Build settings for Groovedeploy (nixpacks). Vercel ignores this file.
-# The default corepack in nixpacks is too old to run pnpm 11 (packageManager in package.json).
+# On the build network only npm's own downloads get through (corepack's direct
+# downloads time out), so pnpm is fetched via npx instead of corepack.
+# NODE_ENV=development so devDependencies (tailwind, typescript) are installed.
 [phases.install]
-cmds = ["npm install -g corepack@latest", "corepack enable", "pnpm i --frozen-lockfile"]
+cmds = ["NODE_ENV=development npx --yes pnpm@11.22.0 install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"
